@@ -838,6 +838,7 @@ extern "C" {
     //additional funs
     cgltf_bool cgltf_element_read_float(const uint8_t* element, cgltf_type type, cgltf_component_type component_type, cgltf_bool normalized, cgltf_float* out, cgltf_size element_size);
     cgltf_size cgltf_component_read_index(const void* in, cgltf_component_type component_type);
+    cgltf_size cgltf_accessor_unpack_floats(const cgltf_accessor* accessor, cgltf_float* out, cgltf_size float_count);
 
 #ifdef __cplusplus
 }
