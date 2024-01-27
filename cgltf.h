@@ -839,6 +839,7 @@ extern "C" {
     cgltf_bool cgltf_element_read_float(const uint8_t* element, cgltf_type type, cgltf_component_type component_type, cgltf_bool normalized, cgltf_float* out, cgltf_size element_size);
     cgltf_size cgltf_component_read_index(const void* in, cgltf_component_type component_type);
     cgltf_size cgltf_accessor_unpack_floats(const cgltf_accessor* accessor, cgltf_float* out, cgltf_size float_count);
+    cgltf_bool cgltf_element_read_uint(const uint8_t* element, cgltf_type type, cgltf_component_type component_type, cgltf_uint* out, cgltf_size element_size);
 
 #ifdef __cplusplus
 }
@@ -1458,11 +1459,11 @@ cgltf_result cgltf_validate(cgltf_data* data) {
             cgltf_size values_req_size = sparse->values_byte_offset + element_size * sparse->count;
 
             CGLTF_ASSERT_IF(sparse->indices_buffer_view->size < indices_req_size ||
-                            sparse->values_buffer_view->size < values_req_size, cgltf_result_data_too_short);
+                sparse->values_buffer_view->size < values_req_size, cgltf_result_data_too_short);
 
             CGLTF_ASSERT_IF(sparse->indices_component_type != cgltf_component_type_r_8u &&
-                            sparse->indices_component_type != cgltf_component_type_r_16u &&
-                            sparse->indices_component_type != cgltf_component_type_r_32u, cgltf_result_invalid_gltf);
+                sparse->indices_component_type != cgltf_component_type_r_16u &&
+                sparse->indices_component_type != cgltf_component_type_r_32u, cgltf_result_invalid_gltf);
 
             if (sparse->indices_buffer_view->buffer->data) {
                 cgltf_size index_bound = cgltf_calc_index_bound(sparse->indices_buffer_view, sparse->indices_byte_offset, sparse->indices_component_type, sparse->count);
@@ -1530,9 +1531,9 @@ cgltf_result cgltf_validate(cgltf_data* data) {
                 cgltf_accessor* indices = data->meshes[i].primitives[j].indices;
 
                 CGLTF_ASSERT_IF(indices &&
-                                indices->component_type != cgltf_component_type_r_8u &&
-                                indices->component_type != cgltf_component_type_r_16u &&
-                                indices->component_type != cgltf_component_type_r_32u, cgltf_result_invalid_gltf);
+                    indices->component_type != cgltf_component_type_r_8u &&
+                    indices->component_type != cgltf_component_type_r_16u &&
+                    indices->component_type != cgltf_component_type_r_32u, cgltf_result_invalid_gltf);
 
                 if (indices && indices->buffer_view && indices->buffer_view->buffer->data) {
                     cgltf_size index_bound = cgltf_calc_index_bound(indices->buffer_view, indices->offset, indices->component_type, indices->count);
@@ -2224,7 +2225,7 @@ static cgltf_uint cgltf_component_read_uint(const void* in, cgltf_component_type
     }
 }
 
-static cgltf_bool cgltf_element_read_uint(const uint8_t* element, cgltf_type type, cgltf_component_type component_type, cgltf_uint* out, cgltf_size element_size) {
+cgltf_bool cgltf_element_read_uint(const uint8_t* element, cgltf_type type, cgltf_component_type component_type, cgltf_uint* out, cgltf_size element_size) {
     cgltf_size num_components = cgltf_num_components(type);
 
     if (element_size < num_components) {
@@ -3338,10 +3339,10 @@ static int cgltf_parse_json_pbr_metallic_roughness(cgltf_options* options, jsmnt
             i = cgltf_parse_json_float_array(tokens, i + 1, json_chunk, out_pbr->base_color_factor, 4);
         } else if (cgltf_json_strcmp(tokens + i, json_chunk, "baseColorTexture") == 0) {
             i = cgltf_parse_json_texture_view(options, tokens, i + 1, json_chunk,
-                                              &out_pbr->base_color_texture);
+                &out_pbr->base_color_texture);
         } else if (cgltf_json_strcmp(tokens + i, json_chunk, "metallicRoughnessTexture") == 0) {
             i = cgltf_parse_json_texture_view(options, tokens, i + 1, json_chunk,
-                                              &out_pbr->metallic_roughness_texture);
+                &out_pbr->metallic_roughness_texture);
         } else {
             i = cgltf_skip_json(tokens, i + 1);
         }
@@ -3871,13 +3872,13 @@ static int cgltf_parse_json_material(cgltf_options* options, jsmntok_t const* to
             i = cgltf_parse_json_float_array(tokens, i + 1, json_chunk, out_material->emissive_factor, 3);
         } else if (cgltf_json_strcmp(tokens + i, json_chunk, "normalTexture") == 0) {
             i = cgltf_parse_json_texture_view(options, tokens, i + 1, json_chunk,
-                                              &out_material->normal_texture);
+                &out_material->normal_texture);
         } else if (cgltf_json_strcmp(tokens + i, json_chunk, "occlusionTexture") == 0) {
             i = cgltf_parse_json_texture_view(options, tokens, i + 1, json_chunk,
-                                              &out_material->occlusion_texture);
+                &out_material->occlusion_texture);
         } else if (cgltf_json_strcmp(tokens + i, json_chunk, "emissiveTexture") == 0) {
             i = cgltf_parse_json_texture_view(options, tokens, i + 1, json_chunk,
-                                              &out_material->emissive_texture);
+                &out_material->emissive_texture);
         } else if (cgltf_json_strcmp(tokens + i, json_chunk, "alphaMode") == 0) {
             ++i;
             if (cgltf_json_strcmp(tokens + i, json_chunk, "OPAQUE") == 0) {
@@ -5440,7 +5441,7 @@ static int cgltf_fixup_pointers(cgltf_data* data) {
   * Allocates a fresh unused token from the token pull.
   */
 static jsmntok_t* jsmn_alloc_token(jsmn_parser* parser,
-                                   jsmntok_t* tokens, size_t num_tokens) {
+    jsmntok_t* tokens, size_t num_tokens) {
     jsmntok_t* tok;
     if (parser->toknext >= num_tokens) {
         return NULL;
@@ -5458,7 +5459,7 @@ static jsmntok_t* jsmn_alloc_token(jsmn_parser* parser,
  * Fills token type and boundaries.
  */
 static void jsmn_fill_token(jsmntok_t* token, jsmntype_t type,
-                            ptrdiff_t start, ptrdiff_t end) {
+    ptrdiff_t start, ptrdiff_t end) {
     token->type = type;
     token->start = start;
     token->end = end;
@@ -5469,7 +5470,7 @@ static void jsmn_fill_token(jsmntok_t* token, jsmntype_t type,
  * Fills next available token with JSON primitive.
  */
 static int jsmn_parse_primitive(jsmn_parser* parser, const char* js,
-                                size_t len, jsmntok_t* tokens, size_t num_tokens) {
+    size_t len, jsmntok_t* tokens, size_t num_tokens) {
     jsmntok_t* token;
     ptrdiff_t start;
 
@@ -5518,7 +5519,7 @@ found:
  * Fills next token with JSON string.
  */
 static int jsmn_parse_string(jsmn_parser* parser, const char* js,
-                             size_t len, jsmntok_t* tokens, size_t num_tokens) {
+    size_t len, jsmntok_t* tokens, size_t num_tokens) {
     jsmntok_t* token;
 
     ptrdiff_t start = parser->pos;
@@ -5561,8 +5562,8 @@ static int jsmn_parse_string(jsmn_parser* parser, const char* js,
                     for (i = 0; i < 4 && parser->pos < len && js[parser->pos] != '\0'; i++) {
                         /* If it isn't a hex character we have an error */
                         if (!((js[parser->pos] >= 48 && js[parser->pos] <= 57) || /* 0-9 */
-                              (js[parser->pos] >= 65 && js[parser->pos] <= 70) || /* A-F */
-                              (js[parser->pos] >= 97 && js[parser->pos] <= 102))) { /* a-f */
+                            (js[parser->pos] >= 65 && js[parser->pos] <= 70) || /* A-F */
+                            (js[parser->pos] >= 97 && js[parser->pos] <= 102))) { /* a-f */
                             parser->pos = start;
                             return JSMN_ERROR_INVAL;
                         }
@@ -5585,7 +5586,7 @@ static int jsmn_parse_string(jsmn_parser* parser, const char* js,
  * Parse JSON string and fill tokens.
  */
 static int jsmn_parse(jsmn_parser* parser, const char* js, size_t len,
-                      jsmntok_t* tokens, size_t num_tokens) {
+    jsmntok_t* tokens, size_t num_tokens) {
     int r;
     int i;
     jsmntok_t* token;
