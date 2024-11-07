@@ -438,6 +438,10 @@ extern "C" {
         cgltf_float ior;
     } cgltf_ior;
 
+    typedef struct cgltf_dispersion {
+        cgltf_float dispersion;
+    } cgltf_dispersion;
+
     typedef struct cgltf_specular {
         cgltf_texture_view specular_texture;
         cgltf_texture_view specular_color_texture;
@@ -486,6 +490,7 @@ extern "C" {
         cgltf_bool has_transmission;
         cgltf_bool has_volume;
         cgltf_bool has_ior;
+        cgltf_bool has_dispersion;
         cgltf_bool has_specular;
         cgltf_bool has_sheen;
         cgltf_bool has_emissive_strength;
@@ -495,6 +500,7 @@ extern "C" {
         cgltf_pbr_specular_glossiness pbr_specular_glossiness;
         cgltf_clearcoat clearcoat;
         cgltf_ior ior;
+        cgltf_dispersion dispersion;
         cgltf_specular specular;
         cgltf_sheen sheen;
         cgltf_transmission transmission;
@@ -3448,6 +3454,33 @@ static int cgltf_parse_json_ior(jsmntok_t const* tokens, int i, const uint8_t* j
     return i;
 }
 
+static int cgltf_parse_json_dispersion(jsmntok_t const* tokens, int i, const uint8_t* json_chunk, cgltf_dispersion* out_dispersion) {
+    CGLTF_CHECK_TOKTYPE(tokens[i], JSMN_OBJECT);
+    int size = tokens[i].size;
+    ++i;
+
+    // Default values
+    out_dispersion->dispersion = 0.0f;
+
+    for (int j = 0; j < size; ++j) {
+        CGLTF_CHECK_KEY(tokens[i]);
+
+        if (cgltf_json_strcmp(tokens + i, json_chunk, "dispersion") == 0) {
+            ++i;
+            out_dispersion->dispersion = cgltf_json_to_float(tokens + i, json_chunk);
+            ++i;
+        } else {
+            i = cgltf_skip_json(tokens, i + 1);
+        }
+
+        if (i < 0) {
+            return i;
+        }
+    }
+
+    return i;
+}
+
 static int cgltf_parse_json_specular(cgltf_options* options, jsmntok_t const* tokens, int i, const uint8_t* json_chunk, cgltf_specular* out_specular) {
     CGLTF_CHECK_TOKTYPE(tokens[i], JSMN_OBJECT);
     int size = tokens[i].size;
@@ -3953,7 +3986,12 @@ static int cgltf_parse_json_material(cgltf_options* options, jsmntok_t const* to
                 } else if (cgltf_json_strcmp(tokens + i, json_chunk, "KHR_materials_anisotropy") == 0) {
                     out_material->has_anisotropy = 1;
                     i = cgltf_parse_json_anisotropy(options, tokens, i + 1, json_chunk, &out_material->anisotropy);
-                } else {
+                } else if (cgltf_json_strcmp(tokens + i, json_chunk, "KHR_materials_dispersion") == 0) {
+                    out_material->has_dispersion = 1;
+                    i = cgltf_parse_json_dispersion(tokens, i + 1, json_chunk, &out_material->dispersion);
+                }
+                
+                else {
                     i = cgltf_parse_json_unprocessed_extension(options, tokens, i, json_chunk, &(out_material->extensions[out_material->extensions_count++]));
                 }
 
